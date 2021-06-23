@@ -18,13 +18,24 @@ test_release(
   puts("Test Handle Released");
 }
 
-int main(void) {
+void test(void) {
   USE_DEFER();
 
   test_handle_t test_handle = test_acquire();
   DEFER(test_release, test_handle);
 
-  FILE *f = fopen("demo.c", "wb");
+  // explicit `return` is required even for void functions, will error out if missing
+  return;
+}
+
+#define STRINGIFY(A) #A
+
+int main(void) {
+  USE_DEFER();
+
+  test();
+
+  FILE *f = fopen(STRINGIFY(__FILE__), "rb");
   DEFER(fclose, f);
 
   return 0;
