@@ -29,13 +29,13 @@ void test(void) {
     DEFER(test_release, test_handle);
   }
 
-  // You can add as many DEFER calls as you want so long as there is enough stack space
+  /* You can add as many DEFER calls as you want so long as there is enough stack space */
   {
     test_handle_t test_handle = test_acquire("two");
     DEFER(test_release, test_handle);
   }
 
-  // explicit `return` is required even for void functions, will error out if missing
+  /* explicit `return` is required even for void functions, will error out if missing */
   return;
 }
 
@@ -45,8 +45,9 @@ void libc(void) {
   const char *path = __FILE__;
   FILE *f = fopen(path, "rb");
 
-  // You can use DEFER on any function that accepts a pointer
-  // `fclose` is a common call that can benefit from DEFER
+  /* You can use DEFER on any function that accepts a pointer
+   * `fclose` is a common call that can benefit from DEFER
+   */
   if (f) DEFER(fclose, f);
 
   return;

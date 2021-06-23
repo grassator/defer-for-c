@@ -1,6 +1,6 @@
-// TODO:
-//  * Support C89/C99
-//  * Add DEFER_NO_ALLOCA flag
+/* TODO:
+ * Add DEFER_NO_ALLOCA flag
+ */
 
 #ifndef DEFER_H
 #define DEFER_H
@@ -21,7 +21,7 @@ union defer_use_t {
   char sentinel[_DEFER_INITIALIZED_];
 };
 
-static inline void
+static void
 defer_drain(
   const struct defer_stack_t *it
 ) {
@@ -51,15 +51,24 @@ static union defer_use_t const *_DEFER_ERROR_VOID_FN_ = 0;
   #define USE_DEFER() USE_DEFER_IMPL
 #endif
 
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+  #define DEFER_STATIC_ASSERT(CONDITION, ERROR_STRING, ERROR_UNDERSCORE)\
+    static_assert(CONDITION, ERROR_STRING)
+#else
+  #define DEFER_STATIC_ASSERT(CONDITION, ERROR_STRING, ERROR_UNDERSCORE)\
+    static int static_assertion_##ERROR_UNDERSCORE[(CONDITION)?1:-1]
+#endif
 
 #define DEFER(_PROC_, _PAYLOAD_)\
   do {\
-    _Static_assert(\
+    DEFER_STATIC_ASSERT(\
       sizeof(defer_impl_holder.sentinel) == _DEFER_INITIALIZED_,\
-      "Please add USE_DEFER() call at the very start of the function"\
+      "Please add USE_DEFER() call at the very start of the function body",\
+      ERROR_please_add_USE_DEFER_call_at_the_very_start_of_the_function_body\
     );\
     struct defer_stack_t *defer_new_entry = DEFER_ALLOCA(sizeof(*defer_new_entry));\
-    defer_new_entry->previous = defer_impl_holder.stack;\
+    defer_new_entry->previous =\
+      defer_impl_holder.stack;\
     defer_new_entry->proc = (void (*)(void *))(_PROC_);\
     defer_new_entry->payload = (void *)(_PAYLOAD_);\
     defer_impl_holder.stack = defer_new_entry;\
