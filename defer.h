@@ -1,3 +1,6 @@
+/* Copyright (c) 2021 Dmitriy Kubyshkin
+ * SPDX-License-Identifier: MIT */
+
 #ifndef DEFER_H
 #define DEFER_H
 
@@ -16,12 +19,14 @@
   #define _DEFER_MSVC_NO_SHADOW_WARNING_(X) X
 #endif
 
+typedef void(*defer_callback_t)(void *payload);
+
 #if defined(DEFER_NO_ALLOCA)
 
   #include <assert.h>
 
   struct defer_stack_item_t {
-    void (*proc)(void *);
+    defer_callback_t proc;
     void *payload;
   };
 
@@ -67,7 +72,7 @@
 #else
   struct defer_stack_t {
     struct defer_stack_t *previous;
-    void (*proc)(void *);
+    defer_callback_t proc;
     void *payload;
   };
   static struct defer_stack_t *defer_stack = {0};
