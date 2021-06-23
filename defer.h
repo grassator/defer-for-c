@@ -11,16 +11,6 @@ struct defer_stack_t {
   void *payload;
 };
 
-enum {
-  _DEFER_NOT_INITIALIZED_ = 1,
-  _DEFER_INITIALIZED_ = 2,
-};
-
-union defer_use_t {
-  struct defer_stack_t *stack;
-  char sentinel[_DEFER_INITIALIZED_];
-};
-
 static void
 defer_drain(
   const struct defer_stack_t *it
@@ -28,11 +18,14 @@ defer_drain(
   for (; it; it = it->previous) it->proc(it->payload);
 }
 
-#define _DEFER_ERROR_VOID_FN_ ERROR_this_void_function_must_use_an_explicit_return_at_the_end
-static union defer_use_t const *_DEFER_ERROR_VOID_FN_ = 0;
+#define _DEFER_ERROR_MISSING_USE_DEFER_\
+  USE_DEFER_must_appear_at_the_start_of_the_functions_using_DEFER
+#define _DEFER_ERROR_VOID_FN_\
+  ERROR_void_functions_must_use_an_explicit_return_at_the_end
 
 #define USE_DEFER_IMPL\
-    union defer_use_t *_DEFER_ERROR_VOID_FN_, defer_impl_holder = {0}
+  _DEFER_ERROR_MISSING_USE_DEFER_: {}\
+  static struct defer_stack_t *defer_stack = {0}
 
 #if defined(_MSC_VER)
   #define DEFER_ALLOCA _alloca
@@ -51,39 +44,22 @@ static union defer_use_t const *_DEFER_ERROR_VOID_FN_ = 0;
   #define USE_DEFER() USE_DEFER_IMPL
 #endif
 
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
-  #define DEFER_STATIC_ASSERT(CONDITION, ERROR_STRING, ERROR_UNDERSCORE)\
-    static_assert(CONDITION, ERROR_STRING)
-#else
-  #define DEFER_STATIC_ASSERT(CONDITION, ERROR_STRING, ERROR_UNDERSCORE)\
-    static int static_assertion_##ERROR_UNDERSCORE[(CONDITION)?1:-1]
-#endif
-
 #define DEFER(_PROC_, _PAYLOAD_)\
   do {\
-    DEFER_STATIC_ASSERT(\
-      sizeof(defer_impl_holder.sentinel) == _DEFER_INITIALIZED_,\
-      "Please add USE_DEFER() call at the very start of the function body",\
-      ERROR_please_add_USE_DEFER_call_at_the_very_start_of_the_function_body\
-    );\
+    if (0) goto _DEFER_ERROR_MISSING_USE_DEFER_;\
+    if (0) goto _DEFER_ERROR_VOID_FN_;\
     struct defer_stack_t *defer_new_entry = DEFER_ALLOCA(sizeof(*defer_new_entry));\
-    defer_new_entry->previous =\
-      defer_impl_holder.stack;\
+    defer_new_entry->previous = defer_stack;\
     defer_new_entry->proc = (void (*)(void *))(_PROC_);\
     defer_new_entry->payload = (void *)(_PAYLOAD_);\
-    defer_impl_holder.stack = defer_new_entry;\
-    if (0) goto _DEFER_ERROR_VOID_FN_;\
+    defer_stack = defer_new_entry;\
   } while(0)
 
-
-static const union {
-  struct defer_stack_t *stack;
-  char sentinel[_DEFER_NOT_INITIALIZED_];
-} defer_impl_holder = {0};
+static struct defer_stack_t *defer_stack = {0};
 
 #define DEFER_CONCAT(A,B) A##B
 #define return \
-  _DEFER_ERROR_VOID_FN_: while((void)_DEFER_ERROR_VOID_FN_, defer_drain(defer_impl_holder.stack), 1)\
-    if (0) goto _DEFER_ERROR_VOID_FN_; else return
+  _DEFER_ERROR_VOID_FN_: while(defer_drain(defer_stack), 1)\
+    if (0) {goto _DEFER_ERROR_VOID_FN_; } else return
 
 #endif
