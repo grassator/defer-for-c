@@ -1,5 +1,16 @@
 #include <stdio.h>
 
+/* If you define DEFER_NO_ALLOCA before including "defer.h" it switches the
+ * implementation to the one not using alloca() call and uses pre-reserved stack
+ * space that needs to be explicitly specified in each USE_DEFER call.
+ *
+ * DEFER_NO_ALLOCA implementation is a bit more efficient in terms of memory on
+ * some compilers but the tradeoff is a requirement to specify stack reservation
+ * size manually in the each function. Also some platforms do not have alloca().
+ *
+ * Uncomment the following line to try it out: */
+/* #define DEFER_NO_ALLOCA */
+
 #include "defer.h"
 
 typedef const char * test_handle_t;
@@ -14,7 +25,7 @@ static void test_release(test_handle_t handle) {
 }
 
 void test(void) {
-  USE_DEFER();
+  USE_DEFER(2); /* The count is only required if DEFER_NO_ALLOCA is set */
 
   /*
    * DEFER calls are done in reverse order (as expected).
@@ -40,7 +51,7 @@ void test(void) {
 }
 
 void libc(void) {
-  USE_DEFER();
+  USE_DEFER(1); /* The count is only required if DEFER_NO_ALLOCA is set */
 
   const char *path = __FILE__;
   FILE *f = fopen(path, "rb");
@@ -54,6 +65,8 @@ void libc(void) {
 }
 
 int main(void) {
+  USE_DEFER(1);
+
   test();
   libc();
 
