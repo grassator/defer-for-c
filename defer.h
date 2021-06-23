@@ -10,6 +10,12 @@ struct defer_stack_t {
   void (*proc)(void *);
   void *payload;
 };
+static struct defer_stack_t *defer_stack = {0};
+
+#define _DEFER_ERROR_MISSING_USE_DEFER_\
+  USE_DEFER_must_appear_at_the_start_of_the_functions_using_DEFER
+#define _DEFER_ERROR_VOID_FN_\
+  ERROR_void_functions_must_use_an_explicit_return_at_the_end
 
 static void
 defer_drain(
@@ -17,11 +23,6 @@ defer_drain(
 ) {
   for (; it; it = it->previous) it->proc(it->payload);
 }
-
-#define _DEFER_ERROR_MISSING_USE_DEFER_\
-  USE_DEFER_must_appear_at_the_start_of_the_functions_using_DEFER
-#define _DEFER_ERROR_VOID_FN_\
-  ERROR_void_functions_must_use_an_explicit_return_at_the_end
 
 #define USE_DEFER_IMPL\
   _DEFER_ERROR_MISSING_USE_DEFER_: {}\
@@ -55,9 +56,6 @@ defer_drain(
     defer_stack = defer_new_entry;\
   } while(0)
 
-static struct defer_stack_t *defer_stack = {0};
-
-#define DEFER_CONCAT(A,B) A##B
 #define return \
   _DEFER_ERROR_VOID_FN_: while(defer_drain(defer_stack), 1)\
     if (0) {goto _DEFER_ERROR_VOID_FN_; } else return
