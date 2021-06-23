@@ -2,41 +2,59 @@
 
 #include "defer.h"
 
-typedef void * test_handle_t;
+typedef const char * test_handle_t;
 
-static test_handle_t
-test_acquire(void) {
-  puts("Test Handle Acquired");
-  return 0;
+static test_handle_t test_acquire(const char *name) {
+  printf("Handle '%s' (ACQUIRE)\n", name);
+  return name;
 }
 
-static void
-test_release(
-  test_handle_t handle
-) {
-  (void)handle;
-  puts("Test Handle Released");
+static void test_release(test_handle_t handle) {
+  printf("Handle '%s' (RELEASE)\n", handle);
 }
 
 void test(void) {
   USE_DEFER();
 
-  test_handle_t test_handle = test_acquire();
-  DEFER(test_release, test_handle);
+  /*
+   * DEFER calls are done in reverse order (as expected).
+   * Running this program will print:
+   *   Handle 'one' (ACQUIRE)
+   *   Handle 'two' (ACQUIRE)
+   *   Handle 'two' (RELEASE)
+   *   Handle 'one' (RELEASE)
+   */
+  {
+    test_handle_t test_handle = test_acquire("one");
+    DEFER(test_release, test_handle);
+  }
+
+  // You can add as many DEFER calls as you want so long as there is enough stack space
+  {
+    test_handle_t test_handle = test_acquire("two");
+    DEFER(test_release, test_handle);
+  }
 
   // explicit `return` is required even for void functions, will error out if missing
   return;
 }
 
-#define STRINGIFY(A) #A
-
-int main(void) {
+void libc(void) {
   USE_DEFER();
 
-  test();
+  const char *path = __FILE__;
+  FILE *f = fopen(path, "rb");
 
-  FILE *f = fopen(STRINGIFY(__FILE__), "rb");
-  DEFER(fclose, f);
+  // You can use DEFER on any function that accepts a pointer
+  // `fclose` is a common call that can benefit from DEFER
+  if (f) DEFER(fclose, f);
+
+  return;
+}
+
+int main(void) {
+  test();
+  libc();
 
   return 0;
 }
