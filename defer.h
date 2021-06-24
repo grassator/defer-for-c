@@ -31,9 +31,9 @@ typedef void(*defer_callback_t)(void *payload);
   };
 
   static struct {
-    struct defer_stack_item_t *items;
-    struct defer_stack_item_t *next;
-  } defer_stack = {0};
+    struct defer_stack_item_t *first;
+    struct defer_stack_item_t items[1];
+  } defer_stack = {&defer_stack.items[1]};
 
   static void
   defer_drain(
@@ -49,25 +49,27 @@ typedef void(*defer_callback_t)(void *payload);
   #define USE_DEFER(_SIZE_)\
     _DEFER_ERROR_MISSING_USE_DEFER_: if (0) goto _DEFER_ERROR_MISSING_USE_DEFER_;\
     struct {\
-      struct defer_stack_item_t *next;\
+      struct defer_stack_item_t *first;\
       struct defer_stack_item_t items[_SIZE_];\
     } _DEFER_MSVC_NO_SHADOW_WARNING_(defer_stack)\
-      = {&defer_stack.items[0]}
+      = {&defer_stack.items[(_SIZE_)]}
 
   #define DEFER(_PROC_, _PAYLOAD_)\
     do {\
       if (0) goto _DEFER_ERROR_MISSING_USE_DEFER_;\
       if (0) goto _DEFER_ERROR_VOID_FN_;\
-      if (defer_stack.next >= &defer_stack.items[_DEFER_COUNTOF_(defer_stack.items)]) {\
+      if (defer_stack.first <= &defer_stack.items[0]) {\
         assert(!"Not enough stack space allocated with USE_DEFER() for all DEFER calls");\
       }\
-      struct defer_stack_item_t *defer_new_entry = defer_stack.next++;\
+      struct defer_stack_item_t *defer_new_entry = --defer_stack.first;\
       defer_new_entry->proc = (void (*)(void *))(_PROC_);\
       defer_new_entry->payload = (void *)(_PAYLOAD_);\
     } while(0)
 
   #define return \
-    _DEFER_ERROR_VOID_FN_: while(defer_drain(defer_stack.items, defer_stack.next), 1)\
+    _DEFER_ERROR_VOID_FN_: while(\
+      defer_drain(defer_stack.first, &defer_stack.items[_DEFER_COUNTOF_(defer_stack.items)]), 1\
+    )\
       if (0) {goto _DEFER_ERROR_VOID_FN_; } else return
 #else
   struct defer_stack_t {

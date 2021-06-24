@@ -24,7 +24,7 @@ static void test_release(test_handle_t handle) {
   printf("Handle '%s' (RELEASE)\n", handle);
 }
 
-void test(void) {
+static void test(void) {
   USE_DEFER(2); /* The count is only required if DEFER_NO_ALLOCA is set */
 
   /*
@@ -50,7 +50,7 @@ void test(void) {
   return;
 }
 
-void libc(void) {
+static void libc(void) {
   USE_DEFER(1); /* The count is only required if DEFER_NO_ALLOCA is set */
 
   const char *path = __FILE__;
