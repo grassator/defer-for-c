@@ -59,7 +59,8 @@ static void libc(void) {
   /* You can use DEFER on any function that accepts a pointer
    * `fclose` is a common call that can benefit from DEFER
    */
-  if (f) DEFER(fclose, f);
+  if (!f) return;
+  DEFER(fclose, f);
 
   return;
 }

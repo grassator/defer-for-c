@@ -52,12 +52,33 @@ does not have any observable effects on procedures without `USE_DEFER()`.
 
 ## Common Issues
 
-### Error Reporting
+### Explicit `return` in `void` Procedures
 
-The library includes static error reporting that is implemented by checking
-the presence of `goto` labels which means that the error would talk about
-the missing label but you should read the name of the label to understand
-the error.
+If you try to compile a procedure like this:
+
+```c
+void foo(void) {
+  USE_DEFER();
+}
+```
+
+> Static error detection only works on MSVC and Clang. If anyone knows how to force GCC
+to error out on a *particular* unused variable help is very much appreciated.
+
+You will get an error that looks similar to this (depending on the compiler):
+
+```
+'ERROR_void_functions_must_use_an_explicit_return_at_the_end': unreferenced local variable
+```
+
+To fix it include a `return;` statement at the end of the procedure:
+
+```c
+void foo(void) {
+  USE_DEFER();
+  return;  /* <-- fix */
+}
+```
 
 ### Missing `USE_DEFER` at the Start of the Procedure
 
@@ -86,31 +107,6 @@ int main() {
   USE_DEFER(); /* <-- fix */
   DEFER(dummy);
   return 0;
-}
-```
-
-### Explicit `return` in `void` Procedures
-
-If you try to compile a procedure like this:
-
-```c
-void foo(void) {
-  USE_DEFER();
-}
-```
-
-You will get an error that looks similar to this (depending on the compiler):
-
-```
-label 'ERROR_void_functions_must_use_an_explicit_return_at_the_end' was undefined
-```
-
-To fix it include a `return;` statement at the end of the procedure:
-
-```c
-void foo(void) {
-  USE_DEFER();
-  return;  /* <-- fix */
 }
 ```
 

@@ -5,7 +5,7 @@ set -e
 # This also works inline: CC=clang ./build.sh
 CC="${CC:-cc}"
 
-FLAGS="-std=c89 -g -O0 -Wall"
+FLAGS="-std=c11 -g -O0 -Wall"
 
 if [[ $($CC -v 2>&1) == *"clang version"* ]]
 then
